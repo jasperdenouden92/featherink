@@ -1,0 +1,253 @@
+@import url('https://fonts.googleapis.com/css2?family=Yantramanav:wght@400;500;700&family=Vollkorn:ital,wght@0,400;1,400&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Featherink Design System Colors */
+  --magical-blue: #2800CA;
+  --lavender: #CCEAF9;
+  --paper: #F9F9FC;
+  --ink-black: #2C2C30;
+  --blood-red: #D72F00;
+  --forest-green: #009544;
+  --ash-grey: #303449;
+  --books-grey: #606060;
+  --pencils-grey: #A0A0A1;
+  --iron-grey: #E0E0E2;
+  --marble-grey: #EEEEF0;
+  
+  /* Typography */
+  --font-yantramanav: 'Yantramanav', sans-serif;
+  --font-vollkorn: 'Vollkorn', serif;
+}
+
+@theme inline {
+  --color-background: var(--paper);
+  --color-foreground: var(--ink-black);
+  --font-sans: var(--font-yantramanav);
+  --font-serif: var(--font-vollkorn);
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink-black);
+  font-family: var(--font-yantramanav);
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+/* Typography Classes */
+.heading-1 {
+  font-family: var(--font-yantramanav);
+  font-weight: 700;
+  font-size: 40px;
+  line-height: 48px;
+}
+
+.heading-2 {
+  font-family: var(--font-yantramanav);
+  font-weight: 400;
+  font-size: 32px;
+  line-height: 40px;
+}
+
+.heading-3 {
+  font-family: var(--font-yantramanav);
+  font-weight: 500;
+  font-size: 24px;
+  line-height: 32px;
+}
+
+.heading-4 {
+  font-family: var(--font-yantramanav);
+  font-weight: 500;
+  font-size: 20px;
+  line-height: 28px;
+}
+
+.subtitle-1 {
+  font-family: var(--font-vollkorn);
+  font-weight: 400;
+  font-size: 24px;
+  line-height: 32px;
+}
+
+.subtitle-2 {
+  font-family: var(--font-vollkorn);
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 25px;
+}
+
+.subtitle-3 {
+  font-family: var(--font-yantramanav);
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 26px;
+}
+
+.paragraph-1 {
+  font-family: var(--font-yantramanav);
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 26px;
+}
+
+.paragraph-2 {
+  font-family: var(--font-vollkorn);
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 20px;
+}
+
+.caption {
+  font-family: var(--font-yantramanav);
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 22px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.micro-text {
+  font-family: var(--font-yantramanav);
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+/* Link Styles */
+.link {
+  font-family: var(--font-yantramanav);
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 25px;
+  text-decoration: underline;
+  color: var(--magical-blue);
+}
+
+.link:hover {
+  color: var(--ash-grey);
+}
+
+/* Button Styles */
+.btn-primary {
+  background-color: var(--magical-blue);
+  color: white;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-family: var(--font-yantramanav);
+  font-weight: 500;
+  font-size: 16px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  background-color: #1a00a0;
+}
+
+.btn-primary:active {
+  background-color: #0d0050;
+}
+
+.btn-ghost {
+  background-color: transparent;
+  color: var(--magical-blue);
+  border: 2px solid var(--magical-blue);
+  border-radius: 8px;
+  padding: 10px 22px;
+  font-family: var(--font-yantramanav);
+  font-weight: 500;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-ghost:hover {
+  background-color: var(--lavender);
+}
+
+.btn-ghost:active {
+  background-color: var(--magical-blue);
+  color: white;
+}
+
+.btn-secondary {
+  background-color: white;
+  color: var(--ink-black);
+  border: 1px solid var(--iron-grey);
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-family: var(--font-yantramanav);
+  font-weight: 500;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background-color: var(--marble-grey);
+}
+
+.btn-secondary:active {
+  background-color: var(--pencils-grey);
+  color: white;
+}
+
+/* Form Elements */
+.form-input {
+  border: 1px solid var(--iron-grey);
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-family: var(--font-yantramanav);
+  font-size: 16px;
+  background-color: white;
+  color: var(--ink-black);
+  transition: border-color 0.2s ease;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--magical-blue);
+}
+
+.form-input.error {
+  border-color: var(--blood-red);
+}
+
+.form-label {
+  font-family: var(--font-yantramanav);
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--ink-black);
+  margin-bottom: 8px;
+  display: block;
+}
+
+/* Grid System */
+.grid-desktop {
+  max-width: 1152px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(12, 64px);
+  gap: 32px;
+}
+
+.grid-tablet {
+  max-width: 704px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(8, 56px);
+  gap: 32px;
+}
+
+.grid-mobile {
+  max-width: 320px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(4, 48px);
+  gap: 32px;
+}
