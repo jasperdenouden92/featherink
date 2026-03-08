@@ -46,6 +46,7 @@
 }
 
 body {
+  margin: 0;
   background: var(--paper);
   color: var(--ink-black);
   font-family: var(--font-yantramanav);
