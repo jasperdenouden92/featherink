@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Card, CardContent, CardHeader } from '@/components/ui/Card'
+import { Card, CardContent } from '@/components/ui/Card'
 
 interface LoginFormProps {
   onSuccess?: () => void
@@ -40,28 +40,23 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
   }
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <h1 className="heading-2 text-center">Login to your account</h1>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
+    <Card className="w-full" style={{ border: 'none', boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.04)', borderRadius: '4px' }}>
+      <CardContent style={{ padding: '24px' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <Input
             label="Email address"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            placeholder="Enter your email"
           />
-          
+
           <Input
             label="Password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            placeholder="Enter your password"
             autoComplete="current-password"
           />
 
@@ -71,16 +66,19 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
             </div>
           )}
 
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={loading}
-          >
-            {loading ? 'Logging in...' : 'Login'}
-          </Button>
+          <div style={{ paddingTop: '8px' }}>
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-primary"
+              style={{ width: '100%', height: '40px' }}
+            >
+              {loading ? 'Logging in...' : 'Login'}
+            </button>
+          </div>
         </form>
 
-        <div className="mt-6 text-center">
+        <div className="mt-6">
           <p className="paragraph-1 text-books-grey">
             Do you want to join Featherink?{' '}
             <a href="/signup" className="link">
