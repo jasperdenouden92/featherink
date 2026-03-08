@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -11,6 +12,7 @@ interface LoginFormProps {
 }
 
 export function LoginForm({ onSuccess }: LoginFormProps) {
+  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -29,8 +31,10 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
 
       if (error) {
         setError(error.message)
+      } else if (onSuccess) {
+        onSuccess()
       } else {
-        onSuccess?.()
+        router.push('/dashboard')
       }
     } catch (err) {
       setError('An unexpected error occurred')
