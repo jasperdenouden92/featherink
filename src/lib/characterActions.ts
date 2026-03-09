@@ -2,7 +2,7 @@ import { supabase } from './supabase'
 import { Database } from './supabase'
 
 type Character = Database['public']['Tables']['characters']['Row']
-type CharacterInsert = Database['public']['Tables']['characters']['Insert']
+type CharacterInsert = Omit<Database['public']['Tables']['characters']['Insert'], 'user_id'>
 type CharacterUpdate = Database['public']['Tables']['characters']['Update']
 
 // Fetch all characters for a story

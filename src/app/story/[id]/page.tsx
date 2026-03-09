@@ -3,10 +3,10 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { fetchStories, isStoryParticipant } from '@/lib/storyActions'
+import { PostWithCharacter, StoryDay } from '@/lib/supabase'
+import { fetchStory, isStoryParticipant } from '@/lib/storyActions'
 import { fetchPosts, getActiveDay } from '@/lib/postActions'
 import { StoryWithDetails } from '@/lib/storyActions'
-import { PostWithCharacter, StoryDay } from '@/lib/supabase'
 import { StorySidebar } from '@/components/stories/StorySidebar'
 import { PostCard } from '@/components/stories/PostCard'
 import { PostComposer } from '@/components/stories/PostComposer'
@@ -21,6 +21,7 @@ export default function StoryPage() {
   const [story, setStory] = useState<StoryWithDetails | null>(null)
   const [posts, setPosts] = useState<PostWithCharacter[]>([])
   const [activeDay, setActiveDay] = useState<StoryDay | null>(null)
+  const [selectedDay, setSelectedDay] = useState<StoryDay | null>(null)
   const [loading, setLoading] = useState(true)
   const [isParticipant, setIsParticipant] = useState(false)
 
@@ -32,7 +33,6 @@ export default function StoryPage() {
 
   const loadStoryData = async () => {
     try {
-      // Check if user is authenticated and a participant
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
         router.push('/login')
@@ -47,9 +47,7 @@ export default function StoryPage() {
 
       setIsParticipant(true)
 
-      // Load story details
-      const stories = await fetchStories()
-      const currentStory = stories.find(s => s.id === storyId)
+      const currentStory = await fetchStory(storyId)
       if (!currentStory) {
         router.push('/dashboard')
         return
@@ -57,10 +55,10 @@ export default function StoryPage() {
 
       setStory(currentStory)
 
-      // Load active day and posts
       const day = await getActiveDay(storyId)
       if (day) {
         setActiveDay(day)
+        setSelectedDay(day)
         const dayPosts = await fetchPosts(storyId, day.id)
         setPosts(dayPosts)
       }
@@ -72,7 +70,7 @@ export default function StoryPage() {
   }
 
   const handleDayChange = async (day: StoryDay) => {
-    setActiveDay(day)
+    setSelectedDay(day)
     try {
       const dayPosts = await fetchPosts(storyId, day.id)
       setPosts(dayPosts)
@@ -82,7 +80,7 @@ export default function StoryPage() {
   }
 
   const handlePostCreated = () => {
-    loadStoryData() // Reload to get updated posts
+    loadStoryData()
   }
 
   const handleLogout = async () => {
@@ -114,6 +112,8 @@ export default function StoryPage() {
     )
   }
 
+  const viewingDay = selectedDay || activeDay
+
   return (
     <div className="min-h-screen bg-paper">
       {/* Header */}
@@ -121,16 +121,23 @@ export default function StoryPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
+              <button
+                onClick={() => router.push('/dashboard')}
+                className="heading-3 text-ink-black hover:text-magical-blue transition-colors"
+              >
+                featherink
+              </button>
+              <span className="text-iron-grey">/</span>
               <h1 className="heading-3 text-ink-black">{story.title}</h1>
-              <div className="flex gap-2">
-                <Button variant="secondary">Story</Button>
-                <Button variant="secondary">Characters</Button>
-                <Button variant="secondary">Settings</Button>
-              </div>
             </div>
-            
-            <div className="flex items-center gap-4">
-              <Button variant="secondary">New post</Button>
+
+            <div className="flex items-center gap-3">
+              <Button
+                variant="secondary"
+                onClick={() => router.push(`/story/${storyId}/characters`)}
+              >
+                Characters
+              </Button>
               <Avatar fallback="U" size="sm" />
               <Button variant="ghost" onClick={handleLogout}>
                 Logout
@@ -140,13 +147,14 @@ export default function StoryPage() {
         </div>
       </header>
 
-      {/* Hero Section */}
-      <div className="bg-gradient-to-br from-magical-blue to-lavender py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="heading-1 text-white mb-4">{story.title}</h1>
-          {story.description && (
-            <p className="subtitle-1 text-white opacity-90">{story.description}</p>
-          )}
+      {/* Story ID for sharing */}
+      <div className="bg-lavender/30 border-b border-iron-grey">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-center gap-2 text-sm text-books-grey">
+          <span>Story ID:</span>
+          <code className="bg-white px-2 py-0.5 rounded text-ink-black font-mono text-xs select-all">
+            {storyId}
+          </code>
+          <span className="text-pencils-grey">- Share this with others so they can join</span>
         </div>
       </div>
 
@@ -154,17 +162,17 @@ export default function StoryPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex gap-8">
           {/* Sidebar */}
-          <StorySidebar 
-            storyId={storyId} 
+          <StorySidebar
+            storyId={storyId}
             onDayChange={handleDayChange}
           />
 
           {/* Main Content Area */}
           <div className="flex-1">
-            {activeDay && (
+            {viewingDay && (
               <>
                 <div className="mb-6">
-                  <h2 className="heading-2">DAY {activeDay.day_number}</h2>
+                  <h2 className="heading-2">DAY {viewingDay.day_number}</h2>
                 </div>
 
                 {/* Posts */}
@@ -174,24 +182,36 @@ export default function StoryPage() {
                       key={post.id}
                       post={post}
                       canEdit={true}
+                      onDelete={async (p) => {
+                        const { deletePost } = await import('@/lib/postActions')
+                        await deletePost(p.id)
+                        handlePostCreated()
+                      }}
                     />
                   ))}
                 </div>
 
-                {/* Post Composer */}
-                {activeDay.is_active && (
+                {posts.length === 0 && (
+                  <div className="text-center py-12">
+                    <p className="paragraph-1 text-books-grey">
+                      No posts on this day yet. Be the first to write!
+                    </p>
+                  </div>
+                )}
+
+                {/* Post Composer - only on active day */}
+                {viewingDay.is_active && (
                   <PostComposer
                     storyId={storyId}
-                    dayId={activeDay.id}
+                    dayId={viewingDay.id}
                     onPostCreated={handlePostCreated}
                   />
                 )}
               </>
             )}
 
-            {!activeDay && (
+            {!viewingDay && (
               <div className="text-center py-12">
-                <div className="text-6xl mb-4">📖</div>
                 <h2 className="heading-2 mb-2">No active day</h2>
                 <p className="paragraph-1 text-books-grey">
                   This story doesn't have an active day yet.

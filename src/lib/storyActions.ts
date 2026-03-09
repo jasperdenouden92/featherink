@@ -6,11 +6,8 @@ type StoryInsert = Database['public']['Tables']['stories']['Insert']
 type StoryUpdate = Database['public']['Tables']['stories']['Update']
 
 type StoryParticipant = Database['public']['Tables']['story_participants']['Row']
-type StoryParticipantInsert = Database['public']['Tables']['story_participants']['Insert']
 
 type StoryDay = Database['public']['Tables']['story_days']['Row']
-type StoryDayInsert = Database['public']['Tables']['story_days']['Insert']
-type StoryDayUpdate = Database['public']['Tables']['story_days']['Update']
 
 export interface StoryWithDetails extends Story {
   participants: StoryParticipant[]
@@ -20,18 +17,11 @@ export interface StoryWithDetails extends Story {
 
 // Fetch all stories for the current user
 export async function fetchStories(): Promise<StoryWithDetails[]> {
-  console.log('🔍 fetchStories function called')
-  
   const { data: { user } } = await supabase.auth.getUser()
-  
-  console.log('👤 Current user:', user)
-  
+
   if (!user) {
-    console.log('❌ No user found, throwing error')
     throw new Error('User not authenticated')
   }
-
-  console.log('✅ User authenticated, fetching stories for user:', user.id)
 
   const { data: stories, error } = await supabase
     .from('stories')
@@ -42,195 +32,104 @@ export async function fetchStories(): Promise<StoryWithDetails[]> {
     `)
     .eq('story_participants.user_id', user.id)
 
-  console.log('📊 Stories query result:', { stories, error })
-
   if (error) {
-    console.log('❌ Database error:', error)
     throw error
   }
 
-  console.log('✅ Query successful, transforming data...')
-
-  // Transform the data to match our interface
-  const storiesWithDetails: StoryWithDetails[] = stories.map(story => ({
+  const storiesWithDetails: StoryWithDetails[] = (stories || []).map((story: any) => ({
     ...story,
     participants: story.story_participants || [],
-    active_day: story.story_days?.find(day => day.is_active) || null,
+    active_day: story.story_days?.find((day: StoryDay) => day.is_active) || null,
     day_count: story.story_days?.length || 0
   }))
-
-  console.log('✅ Transformed stories:', storiesWithDetails)
 
   return storiesWithDetails
 }
 
+// Fetch a single story by ID
+export async function fetchStory(storyId: string): Promise<StoryWithDetails | null> {
+  const { data: story, error } = await supabase
+    .from('stories')
+    .select(`
+      *,
+      story_participants(*),
+      story_days(*)
+    `)
+    .eq('id', storyId)
+    .single()
+
+  if (error) {
+    return null
+  }
+
+  return {
+    ...story,
+    participants: (story as any).story_participants || [],
+    active_day: (story as any).story_days?.find((day: StoryDay) => day.is_active) || null,
+    day_count: (story as any).story_days?.length || 0
+  }
+}
+
 // Create a new story
 export async function createStory(story: StoryInsert): Promise<Story> {
-  console.log('🚀 Starting createStory with:', story)
-  
-  // Verify Supabase client is initialized
-  if (!supabase) {
-    console.error('❌ Supabase client is not initialized!')
-    throw new Error('Database connection not available')
-  }
-  
-  console.log('✅ Supabase client initialized')
-  console.log('🔍 Supabase URL configured:', !!process.env.NEXT_PUBLIC_SUPABASE_URL)
-  
-  // Check session first
-  const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-  console.log('🔐 Session check:', { 
-    hasSession: !!session,
-    userId: session?.user?.id,
-    userEmail: session?.user?.email,
-    sessionError: sessionError ? JSON.stringify(sessionError, null, 2) : null
-  })
-  
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
-  console.log('👤 User check:', { 
-    userId: user?.id, 
-    userEmail: user?.email,
-    userError: userError ? JSON.stringify(userError, null, 2) : null
-  })
-  
+  const { data: { user } } = await supabase.auth.getUser()
+
   if (!user) {
-    console.error('❌ No user found')
     throw new Error('User not authenticated')
   }
 
-  console.log('📝 Step 1: Inserting story...')
-  
-  // Verify session is available
-  const { data: { session: currentSession } } = await supabase.auth.getSession()
-  console.log('🔐 Current session for insert:', {
-    hasSession: !!currentSession,
-    userId: currentSession?.user?.id,
-    accessToken: currentSession?.access_token ? 'present (' + currentSession.access_token.substring(0, 20) + '...)' : 'missing',
-    expiresAt: currentSession?.expires_at,
-    tokenType: currentSession?.token_type
-  })
-  
-  // Also check if we can get the user directly
-  const { data: { user: directUser }, error: directUserError } = await supabase.auth.getUser()
-  console.log('👤 Direct user check:', {
-    userId: directUser?.id,
-    email: directUser?.email,
-    error: directUserError
-  })
-  
-  const storyData = {
-    ...story,
-    created_by: user.id
-  }
-  console.log('📝 Story data to insert:', storyData)
-  console.log('📝 User ID from auth:', user.id)
-  console.log('📝 Created_by value:', storyData.created_by)
-  console.log('📝 Values match?', user.id === storyData.created_by)
-  
-  // Ensure we have a fresh session before making the request
-  const { data: { session: insertSession } } = await supabase.auth.getSession()
-  if (!insertSession?.access_token) {
-    console.error('❌ No access token in session!')
-    throw new Error('Authentication session expired. Please log in again.')
-  }
-  
-  console.log('🔑 Access token present:', insertSession.access_token.substring(0, 20) + '...')
-  
-  // Try the insert - Supabase client should automatically include the JWT token
   const { data, error: storyError } = await supabase
     .from('stories')
-    .insert(storyData)
+    .insert({
+      ...story,
+      created_by: user.id
+    })
     .select()
     .single()
 
-  console.log('📝 Story insert result:', { data, error: storyError })
-  
-  // If error, log full details
   if (storyError) {
-    console.error('📝 Full error object:', storyError)
-    console.error('📝 Error code:', storyError.code)
-    console.error('📝 Error message:', storyError.message)
-    console.error('📝 Error hint:', storyError.hint)
-    console.error('📝 Error details:', storyError.details)
-  }
-  
-  if (storyError) {
-    console.error('❌ Error inserting story:', storyError)
-    console.error('❌ Story error details:', JSON.stringify(storyError, null, 2))
     throw storyError
   }
 
   if (!data) {
-    console.error('❌ No data returned from story insert')
     throw new Error('Failed to create story: no data returned')
   }
 
-  console.log('✅ Story created with ID:', data.id)
-
-  console.log('👥 Step 2: Adding creator as participant...')
-  const participantData = {
-    story_id: data.id,
-    user_id: user.id
-  }
-  console.log('👥 Participant data to insert:', participantData)
-  
-  const { data: participantDataResult, error: participantError } = await supabase
+  // Add creator as participant
+  const { error: participantError } = await supabase
     .from('story_participants')
-    .insert(participantData)
-    .select()
+    .insert({
+      story_id: data.id,
+      user_id: user.id
+    })
 
-  console.log('👥 Participant insert result:', { data: participantDataResult, error: participantError })
-  
   if (participantError) {
-    console.error('❌ Error inserting participant:', participantError)
-    console.error('❌ Participant error details:', JSON.stringify(participantError, null, 2))
-    // Try to clean up the story if participant insert fails
-    const { error: deleteError } = await supabase.from('stories').delete().eq('id', data.id)
-    console.log('🧹 Cleanup result:', deleteError)
+    await supabase.from('stories').delete().eq('id', data.id)
     throw participantError
   }
 
-  console.log('✅ Participant added')
-
-  console.log('📅 Step 3: Creating first day...')
-  const dayData = {
-    story_id: data.id,
-    day_number: 1,
-    is_active: true
-  }
-  console.log('📅 Day data to insert:', dayData)
-  
-  const { data: dayDataResult, error: dayError } = await supabase
+  // Create first day
+  const { error: dayError } = await supabase
     .from('story_days')
-    .insert(dayData)
-    .select()
+    .insert({
+      story_id: data.id,
+      day_number: 1,
+      is_active: true
+    })
 
-  console.log('📅 Day insert result:', { data: dayDataResult, error: dayError })
-  
   if (dayError) {
-    console.error('❌ Error inserting story day:', dayError)
-    console.error('❌ Day error details:', JSON.stringify(dayError, null, 2))
-    console.error('❌ Day error code:', dayError.code)
-    console.error('❌ Day error message:', dayError.message)
-    console.error('❌ Day error hint:', dayError.hint)
-    console.error('❌ Day error details:', dayError.details)
-    // Try to clean up if day insert fails
-    const { error: deleteParticipantError } = await supabase.from('story_participants').delete().eq('story_id', data.id)
-    const { error: deleteStoryError } = await supabase.from('stories').delete().eq('id', data.id)
-    console.log('🧹 Cleanup results:', { deleteParticipantError, deleteStoryError })
+    await supabase.from('story_participants').delete().eq('story_id', data.id)
+    await supabase.from('stories').delete().eq('id', data.id)
     throw dayError
   }
 
-  console.log('✅ Day created')
-  console.log('🎉 Story creation complete!')
-  
   return data
 }
 
 // Join a story (add user as participant)
 export async function joinStory(storyId: string): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser()
-  
+
   if (!user) {
     throw new Error('User not authenticated')
   }
@@ -292,7 +191,7 @@ export async function getStoryParticipants(storyId: string): Promise<StoryPartic
 // Check if user is a participant in a story
 export async function isStoryParticipant(storyId: string): Promise<boolean> {
   const { data: { user } } = await supabase.auth.getUser()
-  
+
   if (!user) {
     return false
   }
