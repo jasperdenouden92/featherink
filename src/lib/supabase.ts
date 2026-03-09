@@ -12,6 +12,21 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 })
 
+// Convenience type aliases
+export type Story = Database['public']['Tables']['stories']['Row']
+export type StoryInsert = Database['public']['Tables']['stories']['Insert']
+export type Character = Database['public']['Tables']['characters']['Row']
+export type CharacterInsert = Database['public']['Tables']['characters']['Insert']
+export type StoryDay = Database['public']['Tables']['story_days']['Row']
+export type PostWithCharacter = Database['public']['Tables']['posts']['Row'] & {
+  character: {
+    id: string
+    name: string
+    avatar_url: string | null
+    user_id: string
+  } | null
+}
+
 // Database types
 export interface Database {
   public: {

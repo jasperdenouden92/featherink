@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { fetchCharacters, createCharacter, updateCharacter, deleteCharacter } from '@/lib/characterActions'
-import { isStoryParticipant } from '@/lib/storyActions'
 import { Character } from '@/lib/supabase'
+import { fetchCharacters, deleteCharacter } from '@/lib/characterActions'
+import { isStoryParticipant } from '@/lib/storyActions'
 import { CharacterCard } from '@/components/characters/CharacterCard'
 import { CharacterForm } from '@/components/characters/CharacterForm'
 import { Button } from '@/components/ui/Button'
@@ -32,7 +32,6 @@ export default function CharactersPage() {
 
   const loadData = async () => {
     try {
-      // Check if user is authenticated and a participant
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
         router.push('/login')
@@ -47,7 +46,6 @@ export default function CharactersPage() {
 
       setIsParticipant(true)
 
-      // Load characters
       const storyCharacters = await fetchCharacters(storyId)
       setCharacters(storyCharacters)
     } catch (error) {
@@ -63,7 +61,7 @@ export default function CharactersPage() {
   }
 
   const handleUpdateCharacter = async (updatedCharacter: Character) => {
-    setCharacters(prev => 
+    setCharacters(prev =>
       prev.map(c => c.id === updatedCharacter.id ? updatedCharacter : c)
     )
     setEditingCharacter(null)
@@ -121,11 +119,25 @@ export default function CharactersPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
-              <h1 className="heading-3 text-ink-black">Characters</h1>
+              <button
+                onClick={() => router.push('/dashboard')}
+                className="heading-3 text-ink-black hover:text-magical-blue transition-colors"
+              >
+                featherink
+              </button>
+              <span className="text-iron-grey">/</span>
+              <button
+                onClick={() => router.push(`/story/${storyId}`)}
+                className="heading-4 text-books-grey hover:text-ink-black transition-colors"
+              >
+                Story
+              </button>
+              <span className="text-iron-grey">/</span>
+              <h1 className="heading-4 text-ink-black">Characters</h1>
             </div>
-            
+
             <div className="flex items-center gap-4">
-              <Button 
+              <Button
                 variant="secondary"
                 onClick={() => setShowCreateForm(true)}
               >
@@ -144,16 +156,11 @@ export default function CharactersPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Search */}
         <div className="mb-8">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="flex-1">
-              <Input
-                placeholder="Search for characters..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <Button variant="secondary">Search</Button>
-          </div>
+          <Input
+            placeholder="Search for characters..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
 
         {/* Character Form */}
@@ -174,7 +181,6 @@ export default function CharactersPage() {
         {/* Characters Grid */}
         {filteredCharacters.length === 0 ? (
           <div className="text-center py-12">
-            <div className="text-6xl mb-4">🎭</div>
             <h2 className="heading-2 mb-2">No characters found</h2>
             <p className="paragraph-1 text-books-grey mb-6">
               {searchTerm ? 'No characters match your search.' : 'Create your first character to get started.'}

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { fetchStories, createStory } from '@/lib/storyActions'
+import { fetchStories, createStory, joinStory } from '@/lib/storyActions'
 import { StoryWithDetails } from '@/lib/storyActions'
 import { StoryList } from '@/components/stories/StoryList'
 import { Button } from '@/components/ui/Button'
@@ -17,9 +17,13 @@ export default function DashboardPage() {
   const [stories, setStories] = useState<StoryWithDetails[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreateForm, setShowCreateForm] = useState(false)
+  const [showJoinForm, setShowJoinForm] = useState(false)
   const [newStoryTitle, setNewStoryTitle] = useState('')
   const [newStoryDescription, setNewStoryDescription] = useState('')
+  const [joinStoryId, setJoinStoryId] = useState('')
   const [creating, setCreating] = useState(false)
+  const [joining, setJoining] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     checkAuth()
@@ -35,24 +39,10 @@ export default function DashboardPage() {
 
   const loadStories = async () => {
     try {
-      console.log('🔄 Starting to load stories...')
       const userStories = await fetchStories()
-      console.log('✅ Stories loaded successfully:', userStories)
       setStories(userStories)
-    } catch (error) {
-      console.error('❌ Error loading stories:', error)
-      console.error('❌ Error type:', typeof error)
-      console.error('❌ Error constructor:', error?.constructor?.name)
-      console.error('❌ Error message:', error?.message)
-      console.error('❌ Error stack:', error?.stack)
-      console.error('❌ Full error object:', error)
-      
-      // Try to stringify the error
-      try {
-        console.error('❌ Error JSON:', JSON.stringify(error, null, 2))
-      } catch (stringifyError) {
-        console.error('❌ Could not stringify error:', stringifyError)
-      }
+    } catch (err) {
+      console.error('Error loading stories:', err)
     } finally {
       setLoading(false)
     }
@@ -60,57 +50,45 @@ export default function DashboardPage() {
 
   const handleCreateStory = async (e: React.FormEvent) => {
     e.preventDefault()
-    
     if (!newStoryTitle.trim()) return
 
     setCreating(true)
+    setError(null)
     try {
-      const newStory = await createStory({
+      await createStory({
         title: newStoryTitle.trim(),
         description: newStoryDescription.trim() || null
       })
-      
-      setStories(prev => [...prev, newStory])
+
       setNewStoryTitle('')
       setNewStoryDescription('')
       setShowCreateForm(false)
-    } catch (error) {
-      console.error('❌❌❌ ERROR IN handleCreateStory ❌❌❌')
-      console.error('Error object:', error)
-      console.error('Error type:', typeof error)
-      console.error('Error constructor:', error?.constructor?.name)
-      
-      // Log more details about the error
-      if (error instanceof Error) {
-        console.error('Error message:', error.message)
-        console.error('Error stack:', error.stack)
-      }
-      
-      // Try to stringify the error
-      try {
-        console.error('Error JSON:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2))
-      } catch (stringifyError) {
-        console.error('Could not stringify error:', stringifyError)
-      }
-      
-      // Check if it's a Supabase error
-      if (error && typeof error === 'object' && 'code' in error) {
-        console.error('Supabase error code:', (error as any).code)
-        console.error('Supabase error message:', (error as any).message)
-        console.error('Supabase error hint:', (error as any).hint)
-        console.error('Supabase error details:', (error as any).details)
-      }
-      
-      // Show user-friendly error message
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : (error && typeof error === 'object' && 'message' in error)
-        ? String((error as any).message)
-        : 'Unknown error occurred'
-      
-      alert(`Failed to create story: ${errorMessage}`)
+      await loadStories()
+    } catch (err: any) {
+      const message = err?.message || (typeof err === 'string' ? err : 'Failed to create story')
+      setError(message)
+      console.error('Create story error:', err)
     } finally {
       setCreating(false)
+    }
+  }
+
+  const handleJoinStory = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!joinStoryId.trim()) return
+
+    setJoining(true)
+    setError(null)
+    try {
+      await joinStory(joinStoryId.trim())
+      setJoinStoryId('')
+      setShowJoinForm(false)
+      await loadStories()
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to join story'
+      setError(message)
+    } finally {
+      setJoining(false)
     }
   }
 
@@ -142,9 +120,8 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
               <h1 className="heading-3 text-ink-black">featherink</h1>
-              <Button variant="secondary">New story</Button>
             </div>
-            
+
             <div className="flex items-center gap-4">
               <Avatar fallback="U" size="sm" />
               <Button variant="ghost" onClick={handleLogout}>
@@ -157,11 +134,25 @@ export default function DashboardPage() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h2 className="heading-2 mb-2">Stories</h2>
+        <div className="mb-8 flex items-center justify-between">
+          <h2 className="heading-2">Stories</h2>
+          <div className="flex gap-3">
+            <Button onClick={() => { setShowCreateForm(true); setShowJoinForm(false) }}>
+              Create Story
+            </Button>
+            <Button variant="secondary" onClick={() => { setShowJoinForm(true); setShowCreateForm(false) }}>
+              Join Story
+            </Button>
+          </div>
         </div>
 
-        {showCreateForm ? (
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-blood-red rounded-lg text-blood-red">
+            {error}
+          </div>
+        )}
+
+        {showCreateForm && (
           <Card className="mb-8">
             <CardHeader>
               <h3 className="heading-3">Create New Story</h3>
@@ -175,7 +166,7 @@ export default function DashboardPage() {
                   placeholder="Enter story title"
                   required
                 />
-                
+
                 <Textarea
                   label="Description"
                   value={newStoryDescription}
@@ -191,7 +182,7 @@ export default function DashboardPage() {
                   >
                     {creating ? 'Creating...' : 'Create Story'}
                   </Button>
-                  
+
                   <Button
                     type="button"
                     variant="secondary"
@@ -203,12 +194,42 @@ export default function DashboardPage() {
               </form>
             </CardContent>
           </Card>
-        ) : (
-          <div className="mb-8">
-            <Button onClick={() => setShowCreateForm(true)}>
-              Create New Story
-            </Button>
-          </div>
+        )}
+
+        {showJoinForm && (
+          <Card className="mb-8">
+            <CardHeader>
+              <h3 className="heading-3">Join a Story</h3>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleJoinStory} className="space-y-4">
+                <Input
+                  label="Story ID"
+                  value={joinStoryId}
+                  onChange={(e) => setJoinStoryId(e.target.value)}
+                  placeholder="Paste the story ID to join"
+                  required
+                />
+
+                <div className="flex gap-3">
+                  <Button
+                    type="submit"
+                    disabled={joining || !joinStoryId.trim()}
+                  >
+                    {joining ? 'Joining...' : 'Join Story'}
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => setShowJoinForm(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
         )}
 
         <StoryList stories={stories} onStoryClick={handleStoryClick} />
